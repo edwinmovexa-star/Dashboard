@@ -1,0 +1,9 @@
+[
+  {"id":"OP-0001","nombre":"María López","iniciales":"ML","area":"Operación","puesto":"Operador","meta":70,"unidad":"piezas","color":"#e7c7a9","imagen":"","activo":true},
+  {"id":"OP-0002","nombre":"Carlos Ruiz","iniciales":"CR","area":"Banco de imágenes","puesto":"Banco de imágenes","meta":400,"unidad":"imágenes","color":"#b9d8cf","imagen":"","activo":true},
+  {"id":"OP-0003","nombre":"Ana Torres","iniciales":"AT","area":"Ortografía","puesto":"Revisión de ortografía","meta":120,"unidad":"correcciones","color":"#e7b7aa","imagen":"","activo":true},
+  {"id":"OP-0004","nombre":"Luis Mendoza","iniciales":"LM","area":"WhatsApp","puesto":"Carga de productos en WhatsApp","meta":200,"unidad":"productos","color":"#c4d1e4","imagen":"","activo":true},
+  {"id":"OP-0005","nombre":"Diana Silva","iniciales":"DS","area":"Revisión de plataforma","puesto":"Revisión de plataforma","meta":null,"unidad":"revisiones","limiteErroresSemanal":100,"color":"#d8c6e4","imagen":"","activo":true},
+  {"id":"OP-0006","nombre":"José Ramírez","iniciales":"JR","area":"Etiquetas","puesto":"Impresión de etiquetas","meta":null,"unidad":"etiquetas","color":"#ead8ac","imagen":"","activo":true},
+  {"id":"OP-0007","nombre":"Elena García","iniciales":"EG","area":"Inventario","puesto":"Inventario","meta":null,"unidad":"productos","color":"#bad9b8","imagen":"","activo":true}
+]

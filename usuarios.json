@@ -1,0 +1,16 @@
+[
+   {
+      "id":1,
+      "nombre":"Edwin Martínez",
+      "email":"admin@noventia.com.mx",
+      "rol":"super_admin",
+      "activo":true
+   },
+   {
+      "id":2,
+      "nombre":"Administrador Noventia",
+      "email":"administrador@noventia.com.mx",
+      "rol":"admin",
+      "activo":true
+   }
+]

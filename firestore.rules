@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)); }
+    function activeUser() { return signedIn() && profile().data.activo == true; }
+    function superAdmin() { return activeUser() && profile().data.rol == 'super_admin'; }
+    function adminOrSuper() { return activeUser() && profile().data.rol in ['admin', 'super_admin']; }
+
+    match /usuarios/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /operadores/{operatorId} {
+      allow read: if adminOrSuper();
+      allow create, update: if superAdmin();
+      allow delete: if false;
+    }
+    match /registros/{recordId} {
+      allow read: if adminOrSuper();
+      allow create: if adminOrSuper()
+                    && request.resource.data.creadoPor == request.auth.uid
+                    && !exists(/databases/$(database)/documents/registros/$(recordId));
+      allow update, delete: if false;
+    }
+  }
+}
