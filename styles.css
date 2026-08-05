@@ -40,7 +40,7 @@
      flex-direction:column;
      justify-content:space-between;
      color:#fff;
-     background:radial-gradient(circle at 78% 18%,#324139 0,transparent 33%),linear-gradient(145deg,#151916,#293029)
+     /* background:radial-gradient(circle at 78% 18%,#324139 0,transparent 33%),linear-gradient(145deg,#151916,#293029) */
 }
 .logo{
     width:52px;
@@ -713,4 +713,33 @@ button#exportOperators{
     color: #01335b;
     background: #f5f5f5;
     border:1px solid #ff7f50
+}
+
+.login{
+    background-image: url(/img/fondo.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.login-cover{
+    background-color: transparent !important;
+}
+
+.login-form>small{
+    font-size: 2rem;
+    color: #f5f5f5;
+}
+
+.login-form h2 {
+    color:#00b8c4
+}
+
+.login-form label{
+    color:#f5f5f5
+}
+
+.item-logo img{
+    max-width: 100%;
+    height: auto;
+    width: 200px;
 }
