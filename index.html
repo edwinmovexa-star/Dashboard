@@ -9,15 +9,42 @@
       <img src="/img/logo2.png" alt="logo" class="img-logo"> 
     </div>
     <nav>
-      <button class="nav active" data-view="resumen">⌂ <span>Captura diaria</span></button>
-      <button class="nav super-only" data-view="operadores">♙ <span>Operadores</span></button>
-      <button class="nav super-only" data-view="registros">▤ <span>Registros</span></button>
-      <button class="nav super-only" data-view="reportes">▥ <span>Reportes</span></button>
-      <button class="nav super-only" data-view="administrar">⚙ <span>Administrar</span></button>
-    </nav><button id="logout" class="logout">← <span>Cerrar sesión</span></button>
+      <button class="nav active" data-view="resumen"><i class="fas fa-home"></i> <span>Captura diaria</span></button>
+      <button class="nav super-only" data-view="operadores"><i class="fas fa-users"></i> <span>Operadores</span></button>
+      <button class="nav super-only" data-view="registros"><i class="far fa-clipboard"></i> <span>Registros</span></button>
+      <button class="nav super-only" data-view="reportes"><i class="fas fa-table"></i> <span>Reportes</span></button>
+      <button class="nav super-only" data-view="administrar"><i class="fas fa-user-cog"></i> <span>Administrar</span></button>
+    </nav><button id="logout" class="logout"><i class="fas fa-sign-out-alt"></i> <span>Cerrar sesión</span></button>
   </aside>
-  <section class="content"><header><div><small id="viewLabel">CAPTURA DIARIA</small><h1>Productividad por área</h1><p id="dateLabel"></p></div><div class="profile"><b id="userInitials">U</b><span id="userName">Usuario<small id="profileRole"></small></span></div></header>
-    <section id="resumen" class="view active-view"><div class="section-intro"><div><h2>Resultados del día por área</h2><p>Selecciona un operador para registrar su productividad.</p></div></div><div id="areaSummary" class="area-summary"></div><div class="main-grid area-layout"><div><div class="section-intro compact"><div><h2>Operadores activos</h2><p>Una captura diaria de lunes a sábado.</p></div></div><div id="featuredCards" class="cards"></div></div><article class="progress"><div class="panel-title"><h2 id="selectedAreaTitle">Progreso</h2><select id="dashboardAreaFilter"></select></div><div id="donut" class="donut"><div><strong id="donutValue">0%</strong><span>cumplimiento</span></div></div><div class="legend"><span><i></i>Completado</span><span><i class="pending"></i>Pendiente</span></div><div class="error-box"><b>!</b><span>Errores del área<strong id="areaErrors">0</strong></span></div></article></div></section>
+  <section class="content">
+    <header>
+      <div>
+        <small id="viewLabel"><i class="fas fa-home"></i>CAPTURA DIARIA</small>
+        <h1>Productividad por área</h1>
+        <p id="dateLabel"></p>
+      </div>
+      <div class="profile">
+        <b id="userInitials">U</b>
+        <span id="userName">Usuario<small id="profileRole"></small></span>
+      </div>
+    </header>
+    <section id="resumen" class="view active-view">
+      <div class="section-intro"><div>
+        <h2>Resultados del día por área</h2>
+        <p>Selecciona un operador para registrar su productividad.</p>
+      </div>
+    </div>
+    <div id="areaSummary" class="area-summary"></div>
+    <article class="progress"><div class="panel-title"><h2 id="selectedAreaTitle">Progreso</h2><select id="dashboardAreaFilter"></select></div><div id="donut" class="donut"><div><strong id="donutValue">0%</strong><span>cumplimiento</span></div></div><div class="legend"><span><i></i>Completado</span><span><i class="pending"></i>Pendiente</span></div><div class="error-box"><b>!</b><span>Errores del área<strong id="areaErrors">0</strong></span></div></article></div></section>
+
+    <div class="main-grid area-layout"><div>
+      <div class="section-intro compact"><div>
+        <h2>Operadores activos</h2>
+        <p>Una captura diaria de lunes a sábado.</p>
+      </div>
+    </div>
+    <div id="featuredCards" class="cards"></div>
+  </div>
     <section id="operadores" class="view super-only"><div class="title"><div><h2>Todos los operadores</h2><p>Consulta operadores activos e inactivos.</p></div></div><div id="allCards" class="operator-list"></div></section>
     <section id="registros" class="view super-only"><div class="title"><div><h2>Registros diarios</h2><p>Los registros guardados no se pueden editar ni eliminar.</p></div><select id="recordsAreaFilter"></select></div><div class="table-box"><table><thead><tr><th>Fecha</th><th>Área</th><th>Operador</th><th>Producción</th><th>Errores</th><th>Estado</th></tr></thead><tbody id="recordsBody"></tbody></table></div></section>
     <section id="reportes" class="view super-only"><div class="title"><div><h2>Reportes de productividad</h2><p>Reporte general, semanal o mensual.</p></div><div class="report-actions"><select id="reportType"><option value="general">Reporte general</option><option value="week">Reporte semanal</option><option value="month">Reporte mensual</option></select><select id="reportAreaFilter"></select><input id="reportWeek" class="hidden" type="week"><input id="reportMonth" class="hidden" type="month"><button id="exportReport" class="primary">Exportar CSV</button></div></div><div id="reportPeriodLabel" class="period-label"></div><div id="reportCards" class="reports"></div><div class="table-box"><table><thead><tr><th>Fecha</th><th>Área</th><th>Operador</th><th>Puesto</th><th>Producción</th><th>Meta diaria</th><th>Errores</th><th>Cumplimiento</th></tr></thead><tbody id="reportBody"></tbody></table></div></section>
@@ -26,5 +53,6 @@
 </main>
 <div id="recordModal" class="modal-bg hidden"><section class="modal"><button class="close" data-close="recordModal">×</button><small>REGISTRO DIARIO · UNA CAPTURA POR DÍA</small><h2 id="modalName"></h2><p id="modalInfo"></p><div class="notice">Después de guardar, el registro quedará bloqueado definitivamente.</div><form id="recordForm"><div id="dynamicFields"></div><label id="errorsField">Errores detectados<input id="errorsInput" type="number" min="0" value="0"></label><label>Observaciones<textarea id="notesInput"></textarea></label><div class="modal-actions"><button type="button" data-close="recordModal">Cancelar</button><button type="submit" class="primary">Guardar y bloquear</button></div></form></section></div>
 <div id="operatorModal" class="modal-bg hidden"><section class="modal"><button class="close" data-close="operatorModal">×</button><small>SUPERADMINISTRADOR</small><h2 id="operatorModalTitle">Nuevo operador</h2><form id="operatorForm"><input id="operatorId" type="hidden"><div class="two-fields"><label>Nombre completo<input id="operatorName" required></label><label>Iniciales<input id="operatorInitials" maxlength="3" required></label></div><div class="two-fields"><label>Área<input id="operatorArea" list="areaOptions" required><datalist id="areaOptions"><option>Operación</option><option>Banco de imágenes</option><option>Ortografía</option><option>WhatsApp</option><option>Revisión de plataforma</option><option>Etiquetas</option><option>Inventario</option></datalist></label><label>Puesto<input id="operatorPosition" required></label></div><div class="two-fields"><label>Meta diaria<input id="operatorGoal" type="number" min="0"></label><label>Unidad<input id="operatorUnit" placeholder="piezas, imágenes…" required></label></div><label>URL de fotografía<input id="operatorImage" type="url" placeholder="https://..."></label><label class="check-row"><input id="operatorActive" type="checkbox" checked> Operador activo</label><div class="modal-actions"><button type="button" data-close="operatorModal">Cancelar</button><button type="submit" class="primary">Guardar operador</button></div></form></section></div>
+<script src="https://kit.fontawesome.com/702f509feb.js" crossorigin="anonymous"></script>
 <script type="module" src="app.js"></script>
 </body></html>

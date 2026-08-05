@@ -1,1 +1,144 @@
-.login-panel{display:grid;place-items:center}.login-message{margin:18px 0;padding:12px;border-radius:9px;background:var(--coral2);color:#9e4037}.login-help{text-align:center;font-size:12px}.section-intro{display:flex;justify-content:space-between;align-items:end;margin-bottom:18px}.section-intro h2{margin:0;font-size:25px}.section-intro p{margin:5px 0 0;color:var(--muted)}.section-intro.compact{margin-top:4px}.area-summary{display:grid;grid-template-columns:repeat(4,minmax(190px,1fr));gap:14px}.area-kpi{padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--paper);display:grid;grid-template-columns:1fr auto;gap:10px}.area-kpi div:first-child{display:grid;gap:6px}.area-kpi span{font-weight:700}.area-kpi strong{font-size:28px;color:var(--green)}.area-kpi small,.area-kpi em{color:var(--muted);font-size:12px;font-style:normal}.area-kpi>b{align-self:center;font-size:20px;color:var(--green)}.mini-progress{grid-column:1/-1;height:6px;border-radius:5px;background:#e7e4dd;overflow:hidden}.mini-progress i{display:block;height:100%;background:var(--green)}.area-kpi em{grid-column:1/-1}.area-layout{grid-template-columns:minmax(620px,1.4fr) minmax(320px,.65fr)}.report-actions{display:flex;gap:10px}.reports{grid-template-columns:repeat(4,1fr);margin-bottom:20px}.report:first-child strong{font-size:20px}.two-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:1250px){.area-summary{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.area-summary{grid-template-columns:repeat(2,1fr)}.area-layout{grid-template-columns:1fr}}@media(max-width:600px){.area-summary{grid-template-columns:1fr}.report-actions{width:100%;flex-direction:column}.title{align-items:flex-start;gap:14px;flex-direction:column}.two-fields{grid-template-columns:1fr}}
+.login-panel{
+    display:grid;
+    place-items:center
+}
+.login-message{
+    margin:18px 0;
+    padding:12px;
+    border-radius:9px;
+    background:var(--coral2);
+    color:#9e4037
+}
+.login-help{
+    text-align:center;
+    font-size:12px
+}
+.section-intro{
+    display:flex;
+    justify-content:space-between;
+    align-items:end;
+    margin-bottom:18px
+}
+.section-intro h2{
+    margin:0;
+    font-size:25px
+}
+.section-intro p{
+    margin:5px 0 0;
+    color:var(--muted)
+}
+.section-intro.compact{
+    margin-top:4px
+}
+.area-summary{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(190px,1fr));
+    gap:14px
+}
+.area-kpi{
+    padding:18px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--paper);
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:10px
+}
+.area-kpi div:first-child{
+    display:grid;
+    gap:6px
+}
+.area-kpi span{
+    font-weight:700
+}
+.area-kpi strong{
+    font-size:28px;
+    color:var(--green)
+}
+.area-kpi small,.area-kpi em{
+    color:var(--muted);
+    font-size:12px;
+    font-style:normal
+}
+.area-kpi>b{
+    align-self:center;
+    font-size:20px;
+    color:var(--green)
+}
+.mini-progress{
+    grid-column:1/-1;
+    height:6px;
+    border-radius:5px;
+    background:#e7e4dd;
+    overflow:hidden
+}
+.mini-progress i{
+    display:block;
+    height:100%;
+    background:var(--green)
+}
+.area-kpi em{
+    grid-column:1/-1
+}
+.area-layout{
+    /* grid-template-columns:minmax(620px,1.4fr) minmax(320px,.65fr) */
+}
+.report-actions{
+    display:flex;
+    gap:10px
+}
+.reports{
+    grid-template-columns:repeat(4,1fr);
+    margin-bottom:20px
+}
+.report:first-child strong{
+    font-size:20px
+}
+.two-fields{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px
+}
+@media(max-width:1250px){
+    .area-summary{
+        grid-template-columns:repeat(3,1fr)
+    }
+}
+@media(max-width:900px){
+    .area-summary{
+        grid-template-columns:repeat(2,1fr)
+    }
+    .area-layout{
+        grid-template-columns:1fr
+    }
+}
+@media(max-width:600px){
+    .area-summary{
+        grid-template-columns:1fr
+    }
+    .report-actions{
+        width:100%;
+        flex-direction:column
+    }
+    .title{
+        align-items:flex-start;
+        gap:14px;
+        flex-direction:column
+    }
+    .two-fields{
+        grid-template-columns:1fr
+    }
+}
+
+.metric .item-contador {
+    font-size: 30px;
+    color: var(--green);
+}
+
+.metric .item-contador small{
+    font-size: 16px;
+}
+
+.danger .metric .item-contador {
+    color: var(--coral);
+}
