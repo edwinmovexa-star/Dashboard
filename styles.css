@@ -743,3 +743,24 @@ button#exportOperators{
     height: auto;
     width: 200px;
 }
+
+#recordDateStatus {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+#recordDateStatus.date-success {
+  color: #167a5a;
+}
+
+#recordDateStatus.date-error {
+  color: #e86f61;
+}
+
+#recordForm input:disabled,
+#recordForm textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background-color: #f2f2f2;
+}
