@@ -115,7 +115,7 @@ function configureUI() {
 //     $(button.dataset.view).classList.add("active-view");
 //     $("viewLabel").textContent = button.textContent.trim().toUpperCase();
 // }
-
+//
 function showView(button) {
   const viewId = button.dataset.view;
   const targetView = document.getElementById(viewId);
