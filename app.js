@@ -108,12 +108,39 @@ function configureUI() {
     }
 }
 
+// function showView(button) {
+//     document.querySelectorAll(".nav").forEach(x => x.classList.remove("active"));
+//     button.classList.add("active");
+//     document.querySelectorAll(".view").forEach(x => x.classList.remove("active-view"));
+//     $(button.dataset.view).classList.add("active-view");
+//     $("viewLabel").textContent = button.textContent.trim().toUpperCase();
+// }
+
 function showView(button) {
-    document.querySelectorAll(".nav").forEach(x => x.classList.remove("active"));
-    button.classList.add("active");
-    document.querySelectorAll(".view").forEach(x => x.classList.remove("active-view"));
-    $(button.dataset.view).classList.add("active-view");
-    $("viewLabel").textContent = button.textContent.trim().toUpperCase();
+  const viewId = button.dataset.view;
+  const targetView = document.getElementById(viewId);
+
+  if (!targetView) {
+    console.error(`No existe la vista con id="${viewId}"`);
+    return;
+  }
+
+  document.querySelectorAll(".nav").forEach(item => {
+    item.classList.remove("active");
+  });
+
+  document.querySelectorAll(".view").forEach(view => {
+    view.classList.remove("active-view");
+  });
+
+  button.classList.add("active");
+  targetView.classList.add("active-view");
+
+  const viewLabel = document.getElementById("viewLabel");
+
+  if (viewLabel) {
+    viewLabel.textContent = button.textContent.trim().toUpperCase();
+  }
 }
 
 function refresh() {
