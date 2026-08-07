@@ -131,15 +131,15 @@ onAuthStateChanged(auth, async (user) => {
     configureUI();
     onSnapshot(collection(db, "operadores"), snapshot => {
         operators = snapshot.docs.map(item => ({
-            id: item.id,
-            ...item.data()
+          ...item.data(),
+          id: item.id,
         })).sort((a, b) => a.nombre.localeCompare(b.nombre));
         refresh();
     });
     onSnapshot(collection(db, "registros"), snapshot => {
         records = snapshot.docs.map(item => ({
-            id: item.id,
-            ...item.data()
+          ...item.data(),
+          id: item.id,
         }));
         refresh();
     });
@@ -655,6 +655,7 @@ async function saveDailyRecord(event) {
     console.log({
   selectedDate,
   operatorId: operator.id,
+  operatorName: operator.nombre,
   recordId
 });
 
@@ -662,14 +663,24 @@ async function saveDailyRecord(event) {
   // aunque dos usuarios intenten registrar al mismo tiempo.
   const existingRecord = await getDoc(reference);
 
-  if (existingRecord.exists()) {
-    alert(
-      `Este operador ya tiene un registro para el ${selectedDate}.`
-    );
+if (existingRecord.exists()) {
+  const existingData = existingRecord.data();
 
-    validateRecordDate();
-    return;
-  }
+  console.error("Registro encontrado:", {
+    recordId,
+    operadorSeleccionado: {
+      id: operator.id,
+      nombre: operator.nombre
+    },
+    registroExistente: existingData
+  });
+
+  alert(
+    `Conflicto detectado. Registro: ${recordId}. Revisa la consola.`
+  );
+
+  return;
+}
 
   const isImageBank =
     operator.area === "Banco de imágenes";
