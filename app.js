@@ -652,6 +652,12 @@ async function saveDailyRecord(event) {
   const recordId = `${selectedDate}_${operator.id}`;
   const reference = doc(db, "registros", recordId);
 
+    console.log({
+  selectedDate,
+  operatorId: operator.id,
+  recordId
+});
+
   // Se consulta Firestore nuevamente para impedir duplicados,
   // aunque dos usuarios intenten registrar al mismo tiempo.
   const existingRecord = await getDoc(reference);
