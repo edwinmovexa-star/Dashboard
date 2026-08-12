@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard de Productividad</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css?v=7"><link rel="stylesheet" href="reports.css?v=7"><link rel="stylesheet" href="firebase.css"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard de Productividad</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css?v=5"><link rel="stylesheet" href="reports.css"><link rel="stylesheet" href="firebase.css"></head>
 <body>
 <div id="loading" class="loading-screen">Cargando dashboard…</div>
 <main id="app" class="app hidden">
@@ -38,6 +38,24 @@
         <span id="dashboardWeekLabel" class="week-badge"></span>
       </div>
 
+      <div class="dashboard-totals" aria-label="Resumen semanal general">
+        <article>
+          <span>Producción total</span>
+          <strong id="dashboardTotalProduction">0</strong>
+          <small>Acumulado semanal</small>
+        </article>
+        <article>
+          <span>Errores totales</span>
+          <strong id="dashboardTotalErrors">0</strong>
+          <small>Errores registrados</small>
+        </article>
+        <article class="error-percentage">
+          <span>Porcentaje de errores</span>
+          <strong id="dashboardErrorPercent">0.00%</strong>
+          <small>Errores ÷ producción total</small>
+        </article>
+      </div>
+
       <div id="areaSummary" class="area-summary"></div>
 
       <div class="main-grid area-layout">
@@ -64,7 +82,7 @@
             <span>Producción<strong id="areaProduction">0</strong></span>
             <span>Meta semanal<strong id="areaWeeklyGoal">0</strong></span>
             <span>Meta al día<strong id="areaExpectedGoal">0</strong></span>
-            <span>Errores<strong id="areaErrors">0</strong></span>
+            <span>Errores sobre producción<strong id="areaErrors">0%</strong></span>
           </div>
         </article>
       </div>
@@ -72,7 +90,7 @@
 
     <section id="operadores" class="view"><div class="title"><div><h2>Todos los operadores</h2><p>Consulta operadores activos e inactivos.</p></div></div><div id="allCards" class="operator-list"></div></section>
     <section id="registros" class="view"><div class="title"><div><h2>Registros diarios</h2><p>Los registros guardados no se pueden editar ni eliminar.</p></div><select id="recordsAreaFilter"></select></div><div class="table-box"><table><thead><tr><th>Fecha</th><th>Área</th><th>Operador</th><th>Producción</th><th>Errores</th><th>Estado</th></tr></thead><tbody id="recordsBody"></tbody></table></div></section>
-    <section id="reportes" class="view"><div class="title"><div><h2>Reportes de productividad</h2><p>Consulta y exporta resultados por área, semana o mes.</p></div><div class="report-actions"><select id="reportType"><option value="week">Reporte semanal</option><option value="month">Reporte mensual</option></select><select id="reportAreaFilter"></select><input id="reportWeek" type="week"><input id="reportMonth" class="hidden" type="month"><button id="exportReport" class="primary">Exportar CSV</button></div></div><div id="reportPeriodLabel" class="period-label"></div><div id="reportCards" class="reports"></div><div class="table-box"><table><thead><tr><th>Fecha</th><th>Área</th><th>Operador</th><th>Puesto</th><th>Producción</th><th>Meta diaria</th><th>Errores / porcentaje</th><th>Cumplimiento</th></tr></thead><tbody id="reportBody"></tbody></table></div></section>
+    <section id="reportes" class="view"><div class="title"><div><h2>Reportes de productividad</h2><p>Consulta y exporta resultados por área, semana o mes.</p></div><div class="report-actions"><select id="reportType"><option value="week">Reporte semanal</option><option value="month">Reporte mensual</option></select><select id="reportAreaFilter"></select><input id="reportWeek" type="week"><input id="reportMonth" class="hidden" type="month"><button id="exportReport" class="primary">Exportar CSV</button></div></div><div id="reportPeriodLabel" class="period-label"></div><div id="reportCards" class="reports"></div><div class="table-box"><table><thead><tr><th>Fecha</th><th>Área</th><th>Operador</th><th>Puesto</th><th>Producción</th><th>Meta diaria</th><th>Errores</th><th>Cumplimiento</th></tr></thead><tbody id="reportBody"></tbody></table></div></section>
     <section id="analitica" class="view">
       <div class="title analytics-title">
         <div>
@@ -171,5 +189,5 @@
 </div>
 
 <script src="https://kit.fontawesome.com/702f509feb.js" crossorigin="anonymous"></script>
-<script type="module" src="app.js?v=7"></script>
+<script type="module" src="app.js?v=5"></script>
 </body></html>

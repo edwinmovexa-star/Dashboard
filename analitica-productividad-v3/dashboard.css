@@ -390,12 +390,6 @@
     color:var(--coral)
 }
 
-.analytics-error-row b small{
-    color:var(--muted);
-    font-size:10px;
-    font-weight:600
-}
-
 .analytics-people-chart{
     display:grid;
     gap:12px

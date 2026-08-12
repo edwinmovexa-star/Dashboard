@@ -1092,7 +1092,6 @@ function renderAnalytics() {
     const periodType = $("analyticsPeriodType").value;
     const production = rows.reduce((sum, item) => sum + Number(item.record.produccion || 0), 0);
     const errors = rows.reduce((sum, item) => sum + Number(item.record.errores || 0), 0);
-    const errorPercent = production ? errors / production * 100 : 0;
     const totalDailyGoal = operators
         .filter(isActiveOperator)
         .reduce((sum, operator) => sum + Number(operator.meta || 0), 0);
@@ -1103,8 +1102,7 @@ function renderAnalytics() {
     $("analyticsProduction").textContent = production;
     $("analyticsGoal").textContent = goal || "—";
     $("analyticsPercent").textContent = goal ? `${percent.toFixed(1)}%` : "Sin meta";
-    $("analyticsErrors").textContent = `${errorPercent.toFixed(2)}%`;
-    $("analyticsErrors").title = `${errors} errores de ${production} elementos producidos`;
+    $("analyticsErrors").textContent = errors;
 
     const areaNames = [...new Set([
         ...operators.map(operator => operator.area),
@@ -1119,28 +1117,26 @@ function renderAnalytics() {
             .filter(operator => isActiveOperator(operator) && operator.area === area)
             .reduce((sum, operator) => sum + Number(operator.meta || 0), 0);
         const areaGoal = areaDailyGoal * days;
-        const areaErrorPercent = areaProduction ? areaErrors / areaProduction * 100 : 0;
         return {
             area,
             production: areaProduction,
             errors: areaErrors,
-            errorPercent: areaErrorPercent,
             goal: areaGoal,
             percent: areaGoal ? areaProduction / areaGoal * 100 : 0
         };
     });
 
-    const maxAreaErrorPercent = Math.max(...areaData.map(item => item.errorPercent), 1);
+    const maxAreaErrors = Math.max(...areaData.map(item => item.errors), 1);
     $("analyticsAreaChart").innerHTML = areaData.length
         ? areaData.map(item => {
             const productivityWidth = item.goal ? Math.min(100, item.percent) : item.production ? 100 : 0;
-            const errorWidth = item.errorPercent / maxAreaErrorPercent * 100;
+            const errorWidth = item.errors / maxAreaErrors * 100;
             const state = item.percent >= 100 ? "success" : item.percent >= 85 ? "warning" : "danger";
             return `<article class="analytics-area-item ${state}">
               <div class="analytics-item-heading"><strong>${item.area}</strong><b>${item.goal ? item.percent.toFixed(1) + "%" : "Sin meta"}</b></div>
               <div class="analytics-track"><i class="analytics-production-bar" style="width:${productivityWidth}%"></i></div>
               <div class="analytics-item-meta"><span>${item.production} producción</span><span>Meta ${item.goal || "—"}</span></div>
-              <div class="analytics-error-row"><span>Errores</span><div><i style="width:${errorWidth}%"></i></div><b>${item.errorPercent.toFixed(2)}% <small>(${item.errors})</small></b></div>
+              <div class="analytics-error-row"><span>Errores</span><div><i style="width:${errorWidth}%"></i></div><b>${item.errors}</b></div>
             </article>`;
         }).join("")
         : '<p class="performance-empty">No existen áreas para mostrar.</p>';
@@ -1153,12 +1149,10 @@ function renderAnalytics() {
             const operatorProduction = operatorRows.reduce((sum, item) => sum + Number(item.record.produccion || 0), 0);
             const operatorErrors = operatorRows.reduce((sum, item) => sum + Number(item.record.errores || 0), 0);
             const operatorGoal = Number(operator.meta || 0) * days;
-            const operatorErrorPercent = operatorProduction ? operatorErrors / operatorProduction * 100 : 0;
             return {
                 operator,
                 production: operatorProduction,
                 errors: operatorErrors,
-                errorPercent: operatorErrorPercent,
                 goal: operatorGoal,
                 percent: operatorGoal ? operatorProduction / operatorGoal * 100 : 0,
                 records: operatorRows.length
@@ -1167,12 +1161,12 @@ function renderAnalytics() {
         .filter(item => item.records > 0 || isActiveOperator(item.operator))
         .sort((a, b) => b.production - a.production);
 
-    const maxPersonErrorPercent = Math.max(...people.map(item => item.errorPercent), 1);
+    const maxPersonErrors = Math.max(...people.map(item => item.errors), 1);
     $("analyticsPeopleTitle").textContent = selectedArea === "Todas" ? "Productividad por persona" : `Productividad · ${selectedArea}`;
     $("analyticsPeopleEmpty").classList.toggle("hidden", people.length > 0);
     $("analyticsPeopleChart").innerHTML = people.map(item => {
         const productivityWidth = item.goal ? Math.min(100, item.percent) : item.production ? 100 : 0;
-        const errorWidth = item.errorPercent / maxPersonErrorPercent * 100;
+        const errorWidth = item.errors / maxPersonErrors * 100;
         const state = item.percent >= 100 ? "success" : item.percent >= 85 ? "warning" : "danger";
         return `<article class="analytics-person-item ${state}">
           <div class="analytics-person-profile">${avatar(item.operator)}<div><strong>${item.operator.nombre}</strong><span>${item.operator.area} · ${item.operator.puesto}</span></div></div>
@@ -1180,7 +1174,7 @@ function renderAnalytics() {
             <div class="analytics-item-heading"><span>Productividad</span><b>${item.goal ? item.percent.toFixed(1) + "%" : item.production}</b></div>
             <div class="analytics-track"><i class="analytics-production-bar" style="width:${productivityWidth}%"></i></div>
             <div class="analytics-item-meta"><span>${item.production} producción</span><span>Meta ${item.goal || "—"}</span></div>
-            <div class="analytics-error-row"><span>Errores</span><div><i style="width:${errorWidth}%"></i></div><b>${item.errorPercent.toFixed(2)}% <small>(${item.errors})</small></b></div>
+            <div class="analytics-error-row"><span>Errores</span><div><i style="width:${errorWidth}%"></i></div><b>${item.errors}</b></div>
           </div>
         </article>`;
     }).join("");
@@ -1193,7 +1187,6 @@ function renderReport() {
         type = $("reportType").value,
         production = rows.reduce((s, x) => s + Number(x.record.produccion || 0), 0),
         errors = rows.reduce((s, x) => s + Number(x.record.errores || 0), 0),
-        errorPercent = production ? errors / production * 100 : 0,
         dailyGoal = operators.filter(o => isActiveOperator(o) && (area === "Todas" || o.area === area)).reduce((s, o) => s + (Number(o.meta) || 0), 0),
         days = workingDays(),
         goal = dailyGoal * days,
@@ -1211,7 +1204,7 @@ function renderReport() {
     $("reportCards").innerHTML = `
       <article class="report">Producción<strong>${production}</strong><small>Total del periodo</small></article>
       <article class="report">Meta<strong>${goal || "—"}</strong><small>${days} días laborables</small></article>
-      <article class="report report-errors">Errores<strong>${errors}</strong><small>${errorPercent.toFixed(2)}% de la producción total</small></article>
+      <article class="report">Errores<strong>${errors}</strong><small>Acumulados del periodo</small></article>
       <article class="report">Promedio diario<strong>${dailyAverage.toFixed(1)}</strong><small>${recordedDays} días con captura</small></article>
       <article class="report">Cumplimiento<strong>${goal ? percent.toFixed(1) + "%" : "Sin meta"}</strong><small>Producción contra meta</small></article>
       ${imageDetail}
@@ -1219,18 +1212,13 @@ function renderReport() {
     $("reportBody").innerHTML = rows.length ? rows.map(({
         record,
         operator
-    }) => {
-        const recordProduction = Number(record.produccion || 0);
-        const recordErrors = Number(record.errores || 0);
-        const recordErrorPercent = recordProduction ? recordErrors / recordProduction * 100 : 0;
-        return `<tr><td>${record.fecha}</td><td>${operator.area}</td><td>${operator.nombre}</td><td>${operator.puesto}</td><td>${record.produccion}</td><td>${operator.meta??"—"}</td><td><span class="report-error-value">${recordErrors}<small>${recordErrorPercent.toFixed(2)}%</small></span></td><td>${operator.meta?(record.produccion/operator.meta*100).toFixed(1)+"%":"—"}</td></tr>`;
-    }).join("") : '<tr><td colspan="8" class="empty">No hay registros.</td></tr>';
+    }) => `<tr><td>${record.fecha}</td><td>${operator.area}</td><td>${operator.nombre}</td><td>${operator.puesto}</td><td>${record.produccion}</td><td>${operator.meta??"—"}</td><td>${record.errores}</td><td>${operator.meta?(record.produccion/operator.meta*100).toFixed(1)+"%":"—"}</td></tr>`).join("") : '<tr><td colspan="8" class="empty">No hay registros.</td></tr>';
 }
 
 function exportReport() {
     const rows = reportRows();
     if (!rows.length) return alert("No hay registros para exportar.");
-    const headers = ["Fecha", "Área", "Operador", "Puesto", "Producción", "Meta diaria", "Errores", "Porcentaje de errores", "Con IA", "Sin IA", "Cumplimiento"],
+    const headers = ["Fecha", "Área", "Operador", "Puesto", "Producción", "Meta diaria", "Errores", "Con IA", "Sin IA", "Cumplimiento"],
         data = rows.map(({
             record,
             operator
@@ -1242,7 +1230,6 @@ function exportReport() {
           record.produccion,
           operator.meta ?? "",
           record.errores,
-          Number(record.produccion || 0) ? (Number(record.errores || 0) / Number(record.produccion) * 100).toFixed(2) + "%" : "0.00%",
           record.conIA ?? "",
           record.sinIA ?? "",
           operator.meta ? (Number(record.produccion || 0) / Number(operator.meta) * 100).toFixed(1) + "%" : ""

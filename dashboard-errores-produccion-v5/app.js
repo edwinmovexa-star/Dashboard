@@ -360,6 +360,7 @@ function refresh() {
   if (!userProfile) return;
 
   fillFilters();
+  renderDashboardTotals();
   renderAreaSummary();
   renderOperators();
   renderAreaProgress();
@@ -449,6 +450,7 @@ function areaStats(area) {
     );
     const production = weekRecords.reduce((sum, record) => sum + Number(record.produccion || 0), 0);
     const errors = weekRecords.reduce((sum, record) => sum + Number(record.errores || 0), 0);
+    const errorPercent = production ? errors / production * 100 : 0;
     const dailyGoal = members.reduce((sum, operator) => sum + Number(operator.meta || 0), 0);
     const elapsedDays = currentWeekElapsedDays();
     const weeklyGoal = dailyGoal * 6;
@@ -478,12 +480,38 @@ function areaStats(area) {
         weeklyGoal,
         expectedGoal,
         errors,
+        errorPercent,
         registered,
         elapsedDays,
         percent,
         weeklyPercent,
         state
     };
+}
+
+function renderDashboardTotals() {
+    const [start, end] = currentWeekRange();
+    const activeIds = new Set(
+        operators.filter(isActiveOperator).map(operator => operator.id)
+    );
+    const weekRecords = records.filter(record =>
+        activeIds.has(record.operadorId) &&
+        record.fecha >= start &&
+        record.fecha <= end
+    );
+    const production = weekRecords.reduce(
+        (sum, record) => sum + Number(record.produccion || 0),
+        0
+    );
+    const errors = weekRecords.reduce(
+        (sum, record) => sum + Number(record.errores || 0),
+        0
+    );
+    const errorPercent = production ? errors / production * 100 : 0;
+
+    $("dashboardTotalProduction").textContent = production;
+    $("dashboardTotalErrors").textContent = errors;
+    $("dashboardErrorPercent").textContent = `${errorPercent.toFixed(2)}%`;
 }
 
 function renderAreaSummary() {
@@ -525,7 +553,7 @@ function renderAreaSummary() {
           <div class="mini-progress"><i style="width:${progress}%"></i></div>
           <div class="area-kpi-footer">
             <em>Meta al día: ${s.expectedGoal || "—"}</em>
-            <em>${s.errors} errores</em>
+            <em>${s.errorPercent.toFixed(2)}% errores (${s.errors})</em>
           </div>
         </article>`;
     }).join("");
@@ -747,7 +775,8 @@ function renderAreaProgress() {
     $("areaProduction").textContent = s.production;
     $("areaWeeklyGoal").textContent = s.weeklyGoal || "—";
     $("areaExpectedGoal").textContent = s.expectedGoal || "—";
-    $("areaErrors").textContent = s.errors;
+    $("areaErrors").textContent = `${s.errorPercent.toFixed(2)}%`;
+    $("areaErrors").title = `${s.errors} errores de ${s.production} elementos producidos`;
 }
 
 // function openRecord(id) {
@@ -1193,7 +1222,6 @@ function renderReport() {
         type = $("reportType").value,
         production = rows.reduce((s, x) => s + Number(x.record.produccion || 0), 0),
         errors = rows.reduce((s, x) => s + Number(x.record.errores || 0), 0),
-        errorPercent = production ? errors / production * 100 : 0,
         dailyGoal = operators.filter(o => isActiveOperator(o) && (area === "Todas" || o.area === area)).reduce((s, o) => s + (Number(o.meta) || 0), 0),
         days = workingDays(),
         goal = dailyGoal * days,
@@ -1211,7 +1239,7 @@ function renderReport() {
     $("reportCards").innerHTML = `
       <article class="report">Producción<strong>${production}</strong><small>Total del periodo</small></article>
       <article class="report">Meta<strong>${goal || "—"}</strong><small>${days} días laborables</small></article>
-      <article class="report report-errors">Errores<strong>${errors}</strong><small>${errorPercent.toFixed(2)}% de la producción total</small></article>
+      <article class="report">Errores<strong>${errors}</strong><small>Acumulados del periodo</small></article>
       <article class="report">Promedio diario<strong>${dailyAverage.toFixed(1)}</strong><small>${recordedDays} días con captura</small></article>
       <article class="report">Cumplimiento<strong>${goal ? percent.toFixed(1) + "%" : "Sin meta"}</strong><small>Producción contra meta</small></article>
       ${imageDetail}
@@ -1219,18 +1247,13 @@ function renderReport() {
     $("reportBody").innerHTML = rows.length ? rows.map(({
         record,
         operator
-    }) => {
-        const recordProduction = Number(record.produccion || 0);
-        const recordErrors = Number(record.errores || 0);
-        const recordErrorPercent = recordProduction ? recordErrors / recordProduction * 100 : 0;
-        return `<tr><td>${record.fecha}</td><td>${operator.area}</td><td>${operator.nombre}</td><td>${operator.puesto}</td><td>${record.produccion}</td><td>${operator.meta??"—"}</td><td><span class="report-error-value">${recordErrors}<small>${recordErrorPercent.toFixed(2)}%</small></span></td><td>${operator.meta?(record.produccion/operator.meta*100).toFixed(1)+"%":"—"}</td></tr>`;
-    }).join("") : '<tr><td colspan="8" class="empty">No hay registros.</td></tr>';
+    }) => `<tr><td>${record.fecha}</td><td>${operator.area}</td><td>${operator.nombre}</td><td>${operator.puesto}</td><td>${record.produccion}</td><td>${operator.meta??"—"}</td><td>${record.errores}</td><td>${operator.meta?(record.produccion/operator.meta*100).toFixed(1)+"%":"—"}</td></tr>`).join("") : '<tr><td colspan="8" class="empty">No hay registros.</td></tr>';
 }
 
 function exportReport() {
     const rows = reportRows();
     if (!rows.length) return alert("No hay registros para exportar.");
-    const headers = ["Fecha", "Área", "Operador", "Puesto", "Producción", "Meta diaria", "Errores", "Porcentaje de errores", "Con IA", "Sin IA", "Cumplimiento"],
+    const headers = ["Fecha", "Área", "Operador", "Puesto", "Producción", "Meta diaria", "Errores", "Con IA", "Sin IA", "Cumplimiento"],
         data = rows.map(({
             record,
             operator
@@ -1242,7 +1265,6 @@ function exportReport() {
           record.produccion,
           operator.meta ?? "",
           record.errores,
-          Number(record.produccion || 0) ? (Number(record.errores || 0) / Number(record.produccion) * 100).toFixed(2) + "%" : "0.00%",
           record.conIA ?? "",
           record.sinIA ?? "",
           operator.meta ? (Number(record.produccion || 0) / Number(operator.meta) * 100).toFixed(1) + "%" : ""
