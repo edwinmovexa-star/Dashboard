@@ -103,20 +103,23 @@ function firstDayCurrentMonth() {
   return `${dateKey().slice(0, 7)}-01`;
 }
 
+// function isAllowedRecordDate(fecha) {
+//   if (!fecha) return false;
+
+//   const today = dateKey();
+//   const firstDay = firstDayCurrentMonth();
+
+//   if (fecha < firstDay || fecha > today) {
+//     return false;
+//   }
+
+//   const selectedDate = new Date(`${fecha}T12:00:00`);
+
+//   // Domingo no es laborable.
+//   return selectedDate.getDay() !== 0;
+// }
 function isAllowedRecordDate(fecha) {
-  if (!fecha) return false;
-
-  const today = dateKey();
-  const firstDay = firstDayCurrentMonth();
-
-  if (fecha < firstDay || fecha > today) {
-    return false;
-  }
-
-  const selectedDate = new Date(`${fecha}T12:00:00`);
-
-  // Domingo no es laborable.
-  return selectedDate.getDay() !== 0;
+  return Boolean(fecha);
 }
 
 function lockRecordInputs(locked) {
@@ -776,8 +779,11 @@ function openRecord(id) {
 
   const recordDate = $("recordDate");
 
-  recordDate.min = firstDayCurrentMonth();
-  recordDate.max = dateKey();
+  // recordDate.min = firstDayCurrentMonth();
+  // recordDate.max = dateKey();
+  // recordDate.value = dateKey();
+  recordDate.removeAttribute("min");
+  recordDate.removeAttribute("max");
   recordDate.value = dateKey();
   recordDate.onchange = validateRecordDate;
 
