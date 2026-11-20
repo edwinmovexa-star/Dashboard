@@ -10,6 +10,7 @@ import {
     setDoc,
     addDoc,
     updateDoc,
+    deleteDoc,
     writeBatch
 } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
 import {
@@ -20,9 +21,13 @@ import {
 const $ = (id) => document.getElementById(id);
 let userProfile = null,
     operators = [],
+    activities = [],
     records = [],
     selected = null,
-    selectedPerformanceOperator = null;
+    selectedPerformanceOperator = null,
+    activitiesInitialized = false,
+    operatorsLoaded = false,
+    activitiesLoaded = false;
 const dateKey = () => new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Mexico_City",
     year: "numeric",
@@ -44,6 +49,8 @@ const isActiveOperator = (operator) => operator.activo === true || operator.acti
 const areas = () => [...new Set(operators.filter(isActiveOperator).map(o => o.area))];
 const todayRecord = (id) => records.find(r => r.operadorId === id && r.fecha === dateKey());
 const isSuper = () => userProfile?.rol === "super_admin";
+const weeklyGoalFor = (operator) => Number(operator.metaSemanal ?? (Number(operator.meta || 0) * 6));
+const dailyGoalFor = (operator) => weeklyGoalFor(operator) / 6;
 
 function parseDateKey(value) {
   const [year, month, day] = value.split("-").map(Number);
@@ -186,7 +193,18 @@ onAuthStateChanged(auth, async (user) => {
           ...item.data(),
           id: item.id,
         })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+        operatorsLoaded = true;
         refresh();
+        initializeActivitiesIfNeeded();
+    });
+    onSnapshot(collection(db, "actividades"), snapshot => {
+        activities = snapshot.docs.map(item => ({
+          ...item.data(),
+          id: item.id
+        })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+        activitiesLoaded = true;
+        refresh();
+        initializeActivitiesIfNeeded();
     });
     onSnapshot(collection(db, "registros"), snapshot => {
         records = snapshot.docs.map(item => ({
@@ -196,6 +214,14 @@ onAuthStateChanged(auth, async (user) => {
         refresh();
     });
 });
+function initializeActivitiesIfNeeded() {
+  if (!operatorsLoaded || !activitiesLoaded || !isSuper() || activities.length || !operators.length || activitiesInitialized) return;
+  activitiesInitialized = true;
+  createActivitiesFromExistingOperators().catch(error => {
+    activitiesInitialized = false;
+    console.error("No fue posible crear el catálogo inicial de actividades.", error);
+  });
+}
 function configureUI() {
   $("loading").classList.add("hidden");
   $("app").classList.remove("hidden");
@@ -275,9 +301,33 @@ function configureUI() {
   if (isSuper()) {
     $("newOperator").onclick = () => openOperatorForm();
     $("operatorForm").onsubmit = saveOperator;
+    $("operatorActivity").onchange = updateOperatorActivityPreview;
+    $("newActivity").onclick = () => openActivityForm();
+    $("activityForm").onsubmit = saveActivity;
     $("exportOperators").onclick = exportOperators;
     $("importOperators").onchange = importOperators;
   }
+}
+async function createActivitiesFromExistingOperators() {
+  const byName = new Map();
+  operators.forEach(operator => {
+    if (!operator.area || byName.has(operator.area)) return;
+    byName.set(operator.area, {
+      nombre: operator.area,
+      metaSemanal: weeklyGoalFor(operator),
+      unidad: operator.unidad || "piezas",
+      activo: true,
+      creadoEn: new Date().toISOString(),
+      actualizadoEn: new Date().toISOString()
+    });
+  });
+  if (!byName.size) return;
+  const batch = writeBatch(db);
+  byName.forEach((activity, name) => {
+    const id = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || crypto.randomUUID();
+    batch.set(doc(db, "actividades", id), activity);
+  });
+  await batch.commit();
 }
 // function configureUI() {
 //     $("loading").classList.add("hidden");
@@ -377,6 +427,7 @@ function refresh() {
 
   if (isSuper()) {
     renderAdminOperators();
+    renderAdminActivities();
   }
 }
 
@@ -907,35 +958,56 @@ async function saveDailyRecord(event) {
 }
 
 function renderAdminOperators() {
-    $("adminOperatorsBody").innerHTML = operators.map(o => `<tr><td>${o.nombre}</td><td>${o.area}</td><td>${o.puesto}</td><td>${o.meta??"—"} ${o.unidad||""}</td><td><span class="status-pill ${isActiveOperator(o)?'':'inactive'}">${isActiveOperator(o)?'Activo':'Inactivo'}</span></td><td><div class="action-buttons"><button class="item-edit" data-edit="${o.id}"><i class="fa-solid fa-pen-to-square"></i></button><button data-toggle="${o.id}">${isActiveOperator(o)?'Desactivar':'Activar'}</button></div></td></tr>`).join("");
+    $("adminOperatorsBody").innerHTML = operators.map(o => `<tr><td>${o.nombre}</td><td>${o.area}</td><td>${o.puesto}</td><td>${weeklyGoalFor(o) || "—"} ${o.unidad || ""}</td><td><span class="status-pill ${isActiveOperator(o) ? '' : 'inactive'}">${isActiveOperator(o) ? 'Activo' : 'Inactivo'}</span></td><td><div class="action-buttons"><button class="item-edit" data-edit="${o.id}" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button><button data-toggle="${o.id}">${isActiveOperator(o) ? 'Desactivar' : 'Activar'}</button><button class="danger-button" data-delete-operator="${o.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button></div></td></tr>`).join("");
     document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => openOperatorForm(operators.find(o => o.id === b.dataset.edit)));
     document.querySelectorAll("[data-toggle]").forEach(b => b.onclick = () => toggleOperator(b.dataset.toggle));
+    document.querySelectorAll("[data-delete-operator]").forEach(b => b.onclick = () => deleteOperator(b.dataset.deleteOperator));
+}
+
+function fillActivityCombo(selectedId = "", legacyArea = "") {
+    const available = activities.filter(activity => activity.activo !== false || activity.id === selectedId);
+    $("operatorActivity").innerHTML = '<option value="">Selecciona una actividad</option>' + available.map(activity => `<option value="${activity.id}">${activity.nombre}</option>`).join("");
+    if (selectedId && available.some(activity => activity.id === selectedId)) {
+        $("operatorActivity").value = selectedId;
+    } else if (legacyArea) {
+        const match = available.find(activity => activity.nombre === legacyArea);
+        if (match) $("operatorActivity").value = match.id;
+    }
+    updateOperatorActivityPreview();
+}
+
+function updateOperatorActivityPreview() {
+    const activity = activities.find(item => item.id === $("operatorActivity").value);
+    $("operatorWeeklyGoal").textContent = activity ? activity.metaSemanal : "—";
+    $("operatorUnitPreview").textContent = activity ? activity.unidad : "—";
 }
 
 function openOperatorForm(operator = null) {
     $("operatorForm").reset();
     $("operatorId").value = operator?.id || "";
-    $("operatorModalTitle").textContent = operator ? "Editar operador" : "Nuevo operador";
+    $("operatorModalTitle").textContent = operator ? "Editar persona" : "Nueva persona";
     $("operatorName").value = operator?.nombre || "";
     $("operatorInitials").value = operator?.iniciales || "";
-    $("operatorArea").value = operator?.area || "";
     $("operatorPosition").value = operator?.puesto || "";
-    $("operatorGoal").value = operator?.meta ?? "";
-    $("operatorUnit").value = operator?.unidad || "";
     $("operatorImage").value = operator?.imagen || "";
     $("operatorActive").checked = operator?.activo ?? true;
+    fillActivityCombo(operator?.actividadId || "", operator?.area || "");
     $("operatorModal").classList.remove("hidden");
 }
 async function saveOperator(event) {
     event.preventDefault();
+    const activity = activities.find(item => item.id === $("operatorActivity").value);
+    if (!activity) return alert("Selecciona una actividad válida.");
     const id = $("operatorId").value,
         data = {
             nombre: $("operatorName").value.trim(),
             iniciales: $("operatorInitials").value.trim().toUpperCase(),
-            area: $("operatorArea").value.trim(),
+            actividadId: activity.id,
+            area: activity.nombre,
             puesto: $("operatorPosition").value.trim(),
-            meta: $("operatorGoal").value === "" ? null : Number($("operatorGoal").value),
-            unidad: $("operatorUnit").value.trim(),
+            metaSemanal: Number(activity.metaSemanal || 0),
+            meta: Number(activity.metaSemanal || 0) / 6,
+            unidad: activity.unidad,
             imagen: $("operatorImage").value.trim(),
             activo: $("operatorActive").checked,
             actualizadoEn: new Date().toISOString()
@@ -947,12 +1019,94 @@ async function saveOperator(event) {
     });
     $("operatorModal").classList.add("hidden");
 }
+async function deleteOperator(id) {
+    const operator = operators.find(item => item.id === id);
+    if (!operator) return;
+    const hasRecords = records.some(record => record.operadorId === id);
+    const message = hasRecords
+      ? `${operator.nombre} tiene registros históricos. Se eliminará de la lista de personas, pero sus registros conservarán sus datos en Firestore. ¿Deseas continuar?`
+      : `¿Eliminar definitivamente a ${operator.nombre}?`;
+    if (confirm(message)) await deleteDoc(doc(db, "operadores", id));
+}
 async function toggleOperator(id) {
     const operator = operators.find(o => o.id === id);
     if (confirm(`${isActiveOperator(operator)?'Desactivar':'Activar'} a ${operator.nombre}?`)) await updateDoc(doc(db, "operadores", id), {
         activo: !isActiveOperator(operator),
         actualizadoEn: new Date().toISOString()
     });
+}
+
+function renderAdminActivities() {
+    $("adminActivitiesBody").innerHTML = activities.map(activity => `<tr><td>${activity.nombre}</td><td>${activity.unidad}</td><td>${activity.metaSemanal}</td><td><span class="status-pill ${activity.activo === false ? 'inactive' : ''}">${activity.activo === false ? 'Inactiva' : 'Activa'}</span></td><td><div class="action-buttons"><button class="item-edit" data-edit-activity="${activity.id}" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button><button data-toggle-activity="${activity.id}">${activity.activo === false ? 'Activar' : 'Desactivar'}</button><button class="danger-button" data-delete-activity="${activity.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button></div></td></tr>`).join("");
+    document.querySelectorAll("[data-edit-activity]").forEach(button => button.onclick = () => openActivityForm(activities.find(activity => activity.id === button.dataset.editActivity)));
+    document.querySelectorAll("[data-toggle-activity]").forEach(button => button.onclick = () => toggleActivity(button.dataset.toggleActivity));
+    document.querySelectorAll("[data-delete-activity]").forEach(button => button.onclick = () => deleteActivity(button.dataset.deleteActivity));
+}
+
+function openActivityForm(activity = null) {
+    $("activityForm").reset();
+    $("activityId").value = activity?.id || "";
+    $("activityModalTitle").textContent = activity ? "Editar actividad" : "Nueva actividad";
+    $("activityName").value = activity?.nombre || "";
+    $("activityWeeklyGoal").value = activity?.metaSemanal ?? "";
+    $("activityUnit").value = activity?.unidad || "";
+    $("activityActive").checked = activity?.activo ?? true;
+    $("activityModal").classList.remove("hidden");
+}
+
+async function saveActivity(event) {
+    event.preventDefault();
+    const id = $("activityId").value;
+    const previousActivity = activities.find(activity => activity.id === id);
+    const data = {
+      nombre: $("activityName").value.trim(),
+      metaSemanal: Number($("activityWeeklyGoal").value),
+      unidad: $("activityUnit").value.trim(),
+      activo: $("activityActive").checked,
+      actualizadoEn: new Date().toISOString()
+    };
+    const duplicate = activities.find(activity => activity.nombre.toLowerCase() === data.nombre.toLowerCase() && activity.id !== id);
+    if (duplicate) return alert("Ya existe una actividad con ese nombre.");
+    if (id) {
+      const batch = writeBatch(db);
+      batch.update(doc(db, "actividades", id), data);
+
+      operators
+        .filter(operator =>
+          operator.actividadId === id ||
+          (!operator.actividadId && previousActivity && operator.area === previousActivity.nombre)
+        )
+        .forEach(operator => {
+          batch.update(doc(db, "operadores", operator.id), {
+            actividadId: id,
+            area: data.nombre,
+            metaSemanal: data.metaSemanal,
+            meta: data.metaSemanal / 6,
+            unidad: data.unidad,
+            actualizadoEn: new Date().toISOString()
+          });
+        });
+
+      await batch.commit();
+    } else {
+      await addDoc(collection(db, "actividades"), { ...data, creadoEn: new Date().toISOString() });
+    }
+    $("activityModal").classList.add("hidden");
+}
+
+async function toggleActivity(id) {
+    const activity = activities.find(item => item.id === id);
+    if (!activity) return;
+    await updateDoc(doc(db, "actividades", id), { activo: activity.activo === false, actualizadoEn: new Date().toISOString() });
+}
+
+async function deleteActivity(id) {
+    const activity = activities.find(item => item.id === id);
+    if (!activity) return;
+    if (operators.some(operator => operator.actividadId === id || operator.area === activity.nombre)) {
+      return alert("No puedes eliminar esta actividad porque está asignada a una o más personas. Primero reasígnalas o desactiva la actividad.");
+    }
+    if (confirm(`¿Eliminar definitivamente la actividad ${activity.nombre}?`)) await deleteDoc(doc(db, "actividades", id));
 }
 
 function exportOperators() {

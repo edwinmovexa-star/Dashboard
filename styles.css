@@ -764,3 +764,42 @@ button#exportOperators{
   opacity: 0.55;
   background-color: #f2f2f2;
 }
+
+.activity-admin-title {
+  margin-top: 32px;
+}
+
+.activity-assignment-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 4px 0 16px;
+}
+
+.activity-assignment-summary span {
+  padding: 12px 14px;
+  border: 1px solid #dbe7e3;
+  border-radius: 12px;
+  background: #f6faf8;
+  color: #60716b;
+  font-size: 12px;
+}
+
+.activity-assignment-summary strong {
+  display: block;
+  margin-top: 4px;
+  color: #173f36;
+  font-size: 16px;
+}
+
+.danger-button {
+  color: #b73535 !important;
+  border-color: #f0c7c7 !important;
+  background: #fff7f7 !important;
+}
+
+@media (max-width: 640px) {
+  .activity-assignment-summary {
+    grid-template-columns: 1fr;
+  }
+}

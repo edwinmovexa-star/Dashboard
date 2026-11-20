@@ -14,7 +14,11 @@ service cloud.firestore {
     match /operadores/{operatorId} {
       allow read: if adminOrSuper();
       allow create, update: if superAdmin();
-      allow delete: if false;
+      allow delete: if superAdmin();
+    }
+    match /actividades/{activityId} {
+      allow read: if adminOrSuper();
+      allow create, update, delete: if superAdmin();
     }
     match /registros/{recordId} {
       allow read: if adminOrSuper();

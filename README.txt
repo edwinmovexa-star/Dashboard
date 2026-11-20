@@ -57,3 +57,15 @@ ARCHIVOS IMPORTANTES
 - login.html / login.js: inicio de sesión real.
 - index.html / app.js: dashboard, captura y administración.
 - operadores.json: datos de ejemplo para importación inicial.
+
+ACTUALIZACIÓN: ACTIVIDADES Y PERSONAS
+-------------------------------------
+- El superadministrador puede crear, editar, activar, desactivar y eliminar actividades.
+- Cada actividad define una unidad y una meta semanal.
+- Al crear o editar una persona, la actividad se selecciona desde un combo.
+- El superadministrador puede eliminar personas desde la tabla Administrar.
+- Las áreas existentes se convierten automáticamente en actividades la primera vez que se abre esta versión.
+
+IMPORTANTE: antes de usar estas funciones, publica el archivo firestore.rules actualizado en Firebase.
+Desde Firebase CLI, dentro de la carpeta del proyecto, ejecuta:
+firebase deploy --only firestore:rules
