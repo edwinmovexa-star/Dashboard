@@ -7,7 +7,7 @@ import {
     doc,
     getDoc,
     onSnapshot,
-    setDoc,
+    runTransaction,
     addDoc,
     updateDoc,
     deleteDoc,
@@ -47,6 +47,13 @@ const isSunday = () => new Intl.DateTimeFormat("en-US", {
 }).format(new Date()) === "Sun";
 const isActiveOperator = (operator) => operator.activo === true || operator.activo === "true";
 const areas = () => [...new Set(operators.filter(isActiveOperator).map(o => o.area))];
+const productionSlots = {
+    h08: "08:00–10:00",
+    h10: "10:00–12:00",
+    h12: "12:00–14:00",
+    h15: "15:00–17:00"
+};
+let savingSlot = false;
 const todayRecord = (id) => records.find(r => r.operadorId === id && r.fecha === dateKey());
 const isSuper = () => userProfile?.rol === "super_admin";
 const weeklyGoalFor = (operator) => Number(operator.metaSemanal ?? (Number(operator.meta || 0) * 6));
@@ -129,47 +136,38 @@ function isAllowedRecordDate(fecha) {
   return Boolean(fecha);
 }
 
-function lockRecordInputs(locked) {
-  document
-    .querySelectorAll(
-      "#dynamicFields input, #errorsInput, #notesInput, #recordForm button[type='submit']"
-    )
-    .forEach(element => {
-      element.disabled = locked;
-    });
-}
-
-function validateRecordDate() {
+function validateRecordDate(selectAvailable = false) {
   if (!selected) return false;
 
   const fecha = $("recordDate").value;
-  const statusElement = $("recordDateStatus");
-
-  if (!isAllowedRecordDate(fecha)) {
-    statusElement.textContent =
-      "Selecciona una fecha válida del mes actual, de lunes a sábado.";
-
-    statusElement.className = "date-error";
-    lockRecordInputs(true);
-
-    return false;
+  const record = recordByDate(selected.id, fecha);
+  const historical = Boolean(record && !record.bloques);
+  const slotSelect = $("recordSlot");
+  const available = [...slotSelect.options].filter(option => {
+    option.disabled = historical || Boolean(record?.bloques?.[option.value]);
+    return !option.disabled;
+  });
+  if (selectAvailable && (slotSelect.selectedOptions[0]?.disabled || !slotSelect.value)) {
+    slotSelect.value = available[0]?.value ?? "";
   }
 
-  if (recordByDate(selected.id, fecha)) {
-    statusElement.textContent =
-      "Este operador ya tiene un registro en esta fecha.";
+  const valid = isAllowedRecordDate(fecha) && available.length > 0;
+  const status = $("recordDateStatus");
+  status.className = valid ? "date-success" : "date-error";
+  status.textContent = !fecha ? "Selecciona una fecha."
+    : historical ? "Esta fecha ya tiene un registro diario histórico."
+    : !valid ? "Los cuatro horarios de esta fecha ya están registrados."
+    : !validSlot ? "Selecciona un horario disponible."
+    : `Horarios disponibles: ${available.length} de 4.`;
 
-    statusElement.className = "date-error";
-    lockRecordInputs(true);
+  $("recordDate").disabled = savingSlot;
+  slotSelect.disabled = !valid || savingSlot;
+  const validSlot = valid && slotSelect.value && !slotSelect.selectedOptions[0]?.disabled;
+  document.querySelectorAll(
+    "#dynamicFields input, #errorsInput, #notesInput, #recordForm button[type='submit']"
+  ).forEach(element => { element.disabled = !validSlot || savingSlot; });
 
-    return false;
-  }
-
-  statusElement.textContent = "Fecha disponible para captura.";
-  statusElement.className = "date-success";
-  lockRecordInputs(false);
-
-  return true;
+  return Boolean(validSlot);
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -212,6 +210,7 @@ onAuthStateChanged(auth, async (user) => {
           id: item.id,
         }));
         refresh();
+        if (!$("recordModal").classList.contains("hidden")) validateRecordDate();
     });
 });
 function initializeActivitiesIfNeeded() {
@@ -256,7 +255,7 @@ function configureUI() {
     button.onclick = () => {
       const modal = $(button.dataset.close);
 
-      if (modal) {
+      if (modal && !(button.dataset.close === "recordModal" && savingSlot)) {
         modal.classList.add("hidden");
       }
     };
@@ -626,11 +625,15 @@ function avatar(operator) {
 
 function operatorCard(operator, compact = false) {
   const valuesToday = values(operator);
-  const registeredToday = todayRecord(operator.id);
-
-  const buttonText = registeredToday
-    ? "Registrar otra fecha"
-    : "Registrar actividad";
+  const record = todayRecord(operator.id);
+  const slots = Object.entries(productionSlots).map(([key, time]) => {
+    const slot = record?.bloques?.[key];
+    const locked = record && (!record.bloques || slot);
+    const label = slot ? slot.produccion : locked ? "Histórico" : "Capturar";
+    return `<button type="button" data-record="${operator.id}" data-slot="${key}"
+      ${locked ? "disabled" : ""}><span>${time}</span><strong>${label}</strong></button>`;
+  }).join("");
+  const slotsMarkup = `<div class="production-slots" role="group" aria-label="Producción de hoy por horario">${slots}</div>`;
 
   if (compact) {
     return `
@@ -643,14 +646,15 @@ function operatorCard(operator, compact = false) {
           <small>${operator.puesto}</small>
         </div>
 
-        <strong>${valuesToday.output}</strong>
+        <div class="daily-production"><small>Total del día</small><strong>${valuesToday.output}</strong></div>
 
         <div class="operator-row-actions">
           <button class="view-performance" data-performance="${operator.id}">
             <i class="fa-solid fa-chart-column"></i> Ver productividad
           </button>
-          <button data-record="${operator.id}">${buttonText}</button>
+          <button data-record="${operator.id}">Elegir fecha</button>
         </div>
+        ${slotsMarkup}
       </article>
     `;
   }
@@ -667,6 +671,7 @@ function operatorCard(operator, compact = false) {
       </div>
 
       <div class="metric">
+        <small>Total del día</small>
         <strong>${valuesToday.output}</strong>
         <p>${operator.unidad}</p>
 
@@ -677,8 +682,10 @@ function operatorCard(operator, compact = false) {
         </small>
       </div>
 
+      ${slotsMarkup}
+
       <button class="primary" data-record="${operator.id}">
-        ${buttonText}
+        Elegir fecha
       </button>
     </article>
   `;
@@ -700,7 +707,7 @@ function renderOperators() {
   }
 
   document.querySelectorAll("[data-record]").forEach(button => {
-    button.onclick = () => openRecord(button.dataset.record);
+    button.onclick = () => openRecord(button.dataset.record, button.dataset.slot);
   });
 
   document.querySelectorAll("[data-performance]").forEach(button => {
@@ -816,7 +823,8 @@ function renderAreaProgress() {
 //     $("recordModal").classList.remove("hidden");
 // }
 
-function openRecord(id) {
+function openRecord(id, slotKey) {
+  if (savingSlot) return;
   const operator = operators.find(item => item.id === id);
 
   if (!operator) return;
@@ -836,10 +844,30 @@ function openRecord(id) {
   recordDate.removeAttribute("min");
   recordDate.removeAttribute("max");
   recordDate.value = dateKey();
-  recordDate.onchange = validateRecordDate;
+  recordDate.onchange = () => {
+    $("recordSaveError").textContent = "";
+    renderRecordFields(operator);
+    validateRecordDate(true);
+  };
+  $("recordSlot").onchange = () => {
+    $("recordSaveError").textContent = "";
+    validateRecordDate();
+  };
+  $("recordSlot").innerHTML = Object.entries(productionSlots)
+    .map(([key, time]) => `<option value="${key}">${time}</option>`).join("");
+  $("recordSlot").value = slotKey ?? Object.keys(productionSlots)[0];
+  $("recordSaveError").textContent = "";
 
-  const isImageBank = operator.area === "Banco de imágenes";
+  renderRecordFields(operator);
+  $("recordModal").classList.remove("hidden");
+  validateRecordDate(true);
+}
 
+function renderRecordFields(operator) {
+  const area = recordByDate(operator.id, $("recordDate").value)?.area ?? operator.area;
+  const isImageBank = area === "Banco de imágenes";
+  $("modalInfo").textContent = `${area} · ${operator.puesto}`;
+  $("dynamicFields").dataset.area = area;
   $("dynamicFields").innerHTML = isImageBank
     ? `
       <div class="two-fields">
@@ -863,12 +891,8 @@ function openRecord(id) {
 
   $("errorsField").classList.toggle(
     "hidden",
-    ["Inventario", "Banco de imágenes"].includes(operator.area)
+    ["Inventario", "Banco de imágenes"].includes(area)
   );
-
-  $("recordModal").classList.remove("hidden");
-
-  validateRecordDate();
 }
 
 
@@ -902,59 +926,77 @@ function openRecord(id) {
 
 async function saveDailyRecord(event) {
   event.preventDefault();
+  if (savingSlot || !selected || !validateRecordDate()) return;
 
   const operator = selected;
-
-  if (!operator) return;
-
-  if (!validateRecordDate()) {
-    alert("La fecha seleccionada no está disponible.");
-    return;
-  }
-
-  const selectedDate = $("recordDate").value;
-  const recordId = `${selectedDate}_${operator.id}`;
-  const reference = doc(db, "registros", recordId);
-
-  // Se consulta Firestore nuevamente para impedir duplicados,
-  // aunque dos usuarios intenten registrar al mismo tiempo.
-  const existingRecord = await getDoc(reference);
-
-  if (existingRecord.exists()) {
-    alert(`Este operador ya tiene un registro para el ${selectedDate}.`);
-    validateRecordDate();
-    return;
-  }
-
-  const isImageBank =
-    operator.area === "Banco de imágenes";
-
-  const production = isImageBank
-    ? Number($("withAI").value) +
-      Number($("withoutAI").value)
-    : Number($("outputInput").value);
-
-  const errors = $("errorsField").classList.contains("hidden")
-    ? 0
-    : Number($("errorsInput").value || 0);
-
-  await setDoc(reference, {
-    operadorId: operator.id,
-    fecha: selectedDate,
-    area: operator.area,
-    produccion: production,
-    conIA: isImageBank ? Number($("withAI").value) : null,
-    sinIA: isImageBank ? Number($("withoutAI").value) : null,
-    errores: errors,
+  const fecha = $("recordDate").value;
+  const slotKey = $("recordSlot").value;
+  const uid = auth.currentUser.uid;
+  const area = $("dynamicFields").dataset.area;
+  const isImageBank = area === "Banco de imágenes";
+  const conIA = isImageBank ? Number($("withAI").value) : 0;
+  const sinIA = isImageBank ? Number($("withoutAI").value) : 0;
+  const slot = {
+    produccion: isImageBank ? conIA + sinIA : Number($("outputInput").value),
+    conIA,
+    sinIA,
+    errores: $("errorsField").classList.contains("hidden") ? 0 : Number($("errorsInput").value),
     observaciones: $("notesInput").value.trim(),
-    creadoPor: auth.currentUser.uid,
+    creadoPor: uid,
     creadoEn: new Date().toISOString()
-  });
+  };
+  const reference = doc(db, "registros", `${fecha}_${operator.id}`);
+  const errorElement = $("recordSaveError");
+  errorElement.textContent = "";
+  savingSlot = true;
+  validateRecordDate();
 
-  $("recordModal").classList.add("hidden");
-
-  selected = null;
-  event.target.reset();
+  try {
+    await runTransaction(db, async transaction => {
+      const existing = (await transaction.get(reference)).data();
+      if (existing && !existing.bloques) {
+        throw new Error("registro-historico");
+      }
+      if (existing?.bloques[slotKey]) {
+        throw new Error("horario-duplicado");
+      }
+      if (existing && existing.area !== area) {
+        throw new Error("actividad-distinta");
+      }
+      const totals = {
+        produccion: (existing?.produccion ?? 0) + slot.produccion,
+        errores: (existing?.errores ?? 0) + slot.errores,
+        conIA: isImageBank ? (existing?.conIA ?? 0) + slot.conIA : null,
+        sinIA: isImageBank ? (existing?.sinIA ?? 0) + slot.sinIA : null
+      };
+      transaction.set(reference, {
+        operadorId: operator.id,
+        fecha,
+        area,
+        creadoPor: existing?.creadoPor ?? uid,
+        creadoEn: existing?.creadoEn ?? slot.creadoEn,
+        bloques: { ...existing?.bloques, [slotKey]: slot },
+        ultimoBloque: slotKey,
+        ...totals
+      });
+    });
+    $("recordModal").classList.add("hidden");
+    selected = null;
+    event.target.reset();
+  } catch (error) {
+    console.error(error);
+    if (error.message === "actividad-distinta") renderRecordFields(operator);
+    errorElement.textContent = error.message === "horario-duplicado"
+      ? "Este horario ya fue registrado por otra captura."
+      : error.message === "registro-historico"
+        ? "Esta fecha ya tiene un registro diario histórico."
+        : error.message === "actividad-distinta"
+          ? "La actividad de la fecha cambió. Vuelve a ingresar la producción."
+          : "No se pudo guardar el horario. Revisa la conexión y los permisos de Firestore.";
+  } finally {
+    savingSlot = false;
+    validateRecordDate();
+  }
 }
 
 function renderAdminOperators() {

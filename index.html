@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard de Productividad</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css?v=7"><link rel="stylesheet" href="reports.css?v=7"><link rel="stylesheet" href="firebase.css"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard de Productividad</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="dashboard.css?v=8"><link rel="stylesheet" href="reports.css?v=7"><link rel="stylesheet" href="firebase.css"></head>
 <body>
 <div id="loading" class="loading-screen">Cargando dashboard…</div>
 <main id="app" class="app hidden">
@@ -45,7 +45,7 @@
           <div class="section-intro compact">
             <div>
               <h2>Operadores activos</h2>
-              <p>La captura continúa siendo diaria, de lunes a sábado.</p>
+              <p>Captura la producción por horario y consulta el total del día.</p>
             </div>
           </div>
           <div id="featuredCards" class="cards"></div>
@@ -127,10 +127,10 @@
 <div id="recordModal" class="modal-bg hidden">
   <section class="modal">
     <button class="close" data-close="recordModal">×</button>
-    <small>REGISTRO DIARIO · UNA CAPTURA POR DÍA</small>
+    <small>PRODUCCIÓN POR HORARIO</small>
     <h2 id="modalName"></h2>
     <p id="modalInfo"></p>
-    <div class="notice">Después de guardar, el registro quedará bloqueado definitivamente.</div>
+    <div class="notice">Cada horario se guarda una vez por persona y fecha.</div>
     <form id="recordForm">
       <!-- fecha -->
       <label>
@@ -139,9 +139,11 @@
         <small id="recordDateStatus"></small>
       </label>
 
+      <label>Horario<select id="recordSlot" required></select></label>
       <div id="dynamicFields"></div>
       <label id="errorsField">Errores detectados<input id="errorsInput" type="number" min="0" value="0"></label>
       <label>Observaciones<textarea id="notesInput"></textarea></label>
+      <div id="recordSaveError" class="date-error" role="alert"></div>
       <div class="modal-actions"><button type="button" data-close="recordModal">Cancelar</button><button type="submit" class="primary">Guardar y bloquear</button></div></form></section></div>
 <div id="operatorModal" class="modal-bg hidden"><section class="modal"><button class="close" data-close="operatorModal">×</button><small>SUPERADMINISTRADOR</small><h2 id="operatorModalTitle">Nueva persona</h2><form id="operatorForm"><input id="operatorId" type="hidden"><div class="two-fields"><label>Nombre completo<input id="operatorName" required></label><label>Iniciales<input id="operatorInitials" maxlength="3" required></label></div><div class="two-fields"><label>Actividad<select id="operatorActivity" required></select></label><label>Puesto<input id="operatorPosition" required></label></div><div class="activity-assignment-summary"><span>Meta semanal<strong id="operatorWeeklyGoal">—</strong></span><span>Unidad<strong id="operatorUnitPreview">—</strong></span></div><label>URL de fotografía<input id="operatorImage" type="url" placeholder="https://..."></label><label class="check-row"><input id="operatorActive" type="checkbox" checked> Persona activa</label><div class="modal-actions"><button type="button" data-close="operatorModal">Cancelar</button><button type="submit" class="primary">Guardar persona</button></div></form></section></div>
 <div id="activityModal" class="modal-bg hidden"><section class="modal"><button class="close" data-close="activityModal">×</button><small>SUPERADMINISTRADOR</small><h2 id="activityModalTitle">Nueva actividad</h2><form id="activityForm"><input id="activityId" type="hidden"><label>Nombre de la actividad<input id="activityName" required maxlength="80" placeholder="Ej. Fotografía de producto"></label><div class="two-fields"><label>Meta semanal<input id="activityWeeklyGoal" type="number" min="0" step="1" required></label><label>Unidad<input id="activityUnit" required maxlength="40" placeholder="piezas, imágenes, pedidos…"></label></div><label class="check-row"><input id="activityActive" type="checkbox" checked> Actividad disponible</label><div class="modal-actions"><button type="button" data-close="activityModal">Cancelar</button><button type="submit" class="primary">Guardar actividad</button></div></form></section></div>
@@ -177,5 +179,5 @@
 </div>
 
 <script src="https://kit.fontawesome.com/702f509feb.js" crossorigin="anonymous"></script>
-<script type="module" src="app.js?v=7"></script>
+<script type="module" src="app.js?v=8"></script>
 </body></html>

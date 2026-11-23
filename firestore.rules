@@ -20,12 +20,61 @@ service cloud.firestore {
       allow read: if adminOrSuper();
       allow create, update, delete: if superAdmin();
     }
+    function nonnegativeInt(value) {
+      return value is int && value >= 0;
+    }
+
+    function validSlot(slot, area) {
+      return slot.keys().hasOnly([
+        'produccion', 'errores', 'conIA', 'sinIA', 'observaciones', 'creadoPor', 'creadoEn'
+      ])
+      && nonnegativeInt(slot.produccion) && nonnegativeInt(slot.errores)
+      && nonnegativeInt(slot.conIA) && nonnegativeInt(slot.sinIA)
+      && (area == 'Banco de imágenes'
+        ? slot.produccion == slot.conIA + slot.sinIA
+        : slot.conIA == 0 && slot.sinIA == 0)
+      && slot.observaciones is string
+      && slot.creadoPor == request.auth.uid && slot.creadoEn is string;
+    }
+
+    function addsOneSlot(recordId, previous) {
+      let next = request.resource.data;
+      let key = next.ultimoBloque;
+      let oldSlots = previous.get('bloques', {});
+      let slot = next.bloques[key];
+      return next.keys().hasOnly([
+        'operadorId', 'fecha', 'area', 'creadoPor', 'creadoEn', 'bloques',
+        'ultimoBloque', 'produccion', 'errores', 'conIA', 'sinIA'
+      ])
+      && next.operadorId is string && next.fecha.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+      && recordId == next.fecha + '_' + next.operadorId
+      && next.area is string && key in ['h08', 'h10', 'h12', 'h15']
+      && next.bloques.diff(oldSlots).addedKeys().hasOnly([key])
+      && next.bloques.diff(oldSlots).removedKeys().size() == 0
+      && next.bloques.diff(oldSlots).changedKeys().size() == 0
+      && !(key in oldSlots)
+      && validSlot(slot, next.area)
+      && next.produccion == previous.get('produccion', 0) + slot.produccion
+      && next.errores == previous.get('errores', 0) + slot.errores
+      && (next.area == 'Banco de imágenes'
+        ? next.conIA == previous.get('conIA', 0) + slot.conIA
+          && next.sinIA == previous.get('sinIA', 0) + slot.sinIA
+        : next.conIA == null && next.sinIA == null);
+    }
+
     match /registros/{recordId} {
       allow read: if adminOrSuper();
       allow create: if adminOrSuper()
                     && request.resource.data.creadoPor == request.auth.uid
-                    && !exists(/databases/$(database)/documents/registros/$(recordId));
-      allow update, delete: if false;
+                    && request.resource.data.creadoEn is string
+                    && addsOneSlot(recordId, {});
+      allow update: if adminOrSuper()
+                    && resource.data.get('bloques', null) is map
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                      'bloques', 'ultimoBloque', 'produccion', 'errores', 'conIA', 'sinIA'
+                    ])
+                    && addsOneSlot(recordId, resource.data);
+      allow delete: if false;
     }
   }
 }

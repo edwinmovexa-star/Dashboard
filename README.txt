@@ -42,9 +42,13 @@ El superadministrador puede darlos de alta desde Administrar. Ya no es necesario
 editar operadores.json manualmente. operadores.json queda como ejemplo/importación
 inicial y puede importarse desde la misma pantalla.
 
-5. REGISTROS BLOQUEADOS
-Cada registro usa como ID la fecha más el ID del operador. Las reglas permiten
-crearlo una sola vez y bloquean actualización y eliminación para ambos perfiles.
+5. PRODUCCIÓN POR HORARIO
+Cada tarjeta permite capturar 08:00–10:00, 10:00–12:00, 12:00–14:00 y
+15:00–17:00. Cada horario se guarda una vez por persona y fecha.
+El total se actualiza después de cada captura y se usa en los reportes.
+Los registros diarios históricos se conservan con su total original.
+Para habilitar la captura, publica el firestore.rules actualizado en el
+mismo proyecto Firebase antes de usar los archivos actualizados del dashboard.
 
 6. EJECUCIÓN
 Abre el proyecto con Live Server o publícalo en GitHub Pages/Firebase Hosting.
